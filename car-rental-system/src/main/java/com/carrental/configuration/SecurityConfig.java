@@ -35,7 +35,9 @@ public class SecurityConfig {
 				// Disable CSRF for stateless APIs
 				.csrf(AbstractHttpConfigurer::disable).authorizeHttpRequests(request -> request
 						// Allow Public Access to Login and Register only
-						.requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+						.requestMatchers("/api/auth/register", "/api/auth/login", "/swagger-ui/**", "/v3/api-docs/**",
+								"/swagger-ui.html")
+						.permitAll()
 						// Profile endpoints require authentication
 						.requestMatchers("/api/auth/profile").authenticated()
 						// Protect Admin Routes (Only ADMIN role)
