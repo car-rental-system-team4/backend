@@ -55,7 +55,7 @@ public class AuthServiceImpl implements AuthService {
 		user.setArea(req.getArea());
 		user.setPincode(req.getPincode());
 
-		// 4. Set Role
+		// Set Role
 		if (req.getRole() != null) {
 			try {
 				user.setRole(UserRole.valueOf(req.getRole()));
@@ -66,7 +66,7 @@ public class AuthServiceImpl implements AuthService {
 			user.setRole(UserRole.CUSTOMER);
 		}
 
-		// 5. Set Gender
+		// Set Gender
 		if (req.getGender() != null) {
 			try {
 				user.setGender(Gender.valueOf(req.getGender()));
@@ -205,7 +205,7 @@ public class AuthServiceImpl implements AuthService {
 			try {
 				user.setGender(Gender.valueOf(request.getGender()));
 			} catch (IllegalArgumentException e) {
-				// Invalid gender value, skip update
+				
 			}
 		}
 
