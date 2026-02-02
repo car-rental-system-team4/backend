@@ -16,11 +16,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtFilter extends OncePerRequestFilter {
 
 	private final JwtUtil jwtUtil;
@@ -43,13 +45,21 @@ public class JwtFilter extends OncePerRequestFilter {
 
 		// Extract Token and Email
 		jwt = authHeader.substring(7);// Remove "Bearer"
-		userEmail = jwtUtil.extractUsername(jwt);
+		try {
+			userEmail = jwtUtil.extractUsername(jwt);
+			log.info("Processing JWT for user: {}", userEmail);
+		} catch (Exception e) {
+			log.error("Failed to extract username from JWT: {}", e.getMessage());
+			filterChain.doFilter(request, response);
+			return;
+		}
 
 		// Validate Token
 		if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 			UserDetails userDetails = userService.loadUserByUsername(userEmail);
 
 			if (jwtUtil.isTokenValid(jwt, userDetails)) {
+				log.info("JWT valid for user: {}. Authorities: {}", userEmail, userDetails.getAuthorities());
 				// Create Authentication Token
 				SecurityContext context = SecurityContextHolder.createEmptyContext();
 
@@ -61,7 +71,9 @@ public class JwtFilter extends OncePerRequestFilter {
 				// Set Context
 				context.setAuthentication(authToken);
 				SecurityContextHolder.setContext(context);
-
+				log.info("SecurityContext populated for user: {}", userEmail);
+			} else {
+				log.warn("JWT invalid or expired for user: {}", userEmail);
 			}
 		}
 		filterChain.doFilter(request, response);

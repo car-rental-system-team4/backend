@@ -21,4 +21,7 @@ public interface AuthService {
 
 	// Method to delete user profile
 	boolean deleteProfile(String userEmail);
+
+	// Method to get user profile
+	com.carrental.dto.JwtAuthenticationResponse getProfile(String userEmail);
 }

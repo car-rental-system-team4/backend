@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.carrental.enums.Gender;
 import com.carrental.enums.UserRole;
+import com.carrental.enums.UserStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
@@ -61,6 +62,10 @@ public class User implements UserDetails {
 
 	@Enumerated(EnumType.STRING)
 	private Gender gender;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "status")
+	private UserStatus status = UserStatus.PENDING; // Default to PENDING for new registrations
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {

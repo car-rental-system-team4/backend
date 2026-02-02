@@ -1,10 +1,5 @@
 package com.carrental.service;
 
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
 import java.util.Optional;
 
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,6 +14,7 @@ import com.carrental.dto.UpdateProfileRequest;
 import com.carrental.entity.User;
 import com.carrental.enums.Gender;
 import com.carrental.enums.UserRole;
+import com.carrental.enums.UserStatus;
 import com.carrental.repository.UserRepository;
 import com.carrental.security.JwtUtil;
 
@@ -74,6 +70,14 @@ public class AuthServiceImpl implements AuthService {
 
 			}
 		}
+
+		// Set status to PENDING for new registrations (except ADMIN)
+		if (user.getRole() == UserRole.ADMIN) {
+			user.setStatus(UserStatus.APPROVED); // Admins are auto-approved
+		} else {
+			user.setStatus(UserStatus.PENDING); // All other users need approval
+		}
+
 		userRepo.save(user);
 		return true;
 	}
@@ -228,6 +232,34 @@ public class AuthServiceImpl implements AuthService {
 		// Delete user from database
 		userRepo.delete(user);
 		return true;
+	}
+
+	@Override
+	public JwtAuthenticationResponse getProfile(String userEmail) {
+		// Find user by email
+		User user = userRepo.findByEmail(userEmail)
+				.orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+		// Build response similar to login response
+		JwtAuthenticationResponse response = new JwtAuthenticationResponse();
+		response.setRole(user.getRole().name());
+		response.setName(user.getName());
+		response.setUserId(user.getId());
+		response.setEmail(user.getEmail());
+		response.setPhoneNo(user.getPhoneNo());
+		response.setLicenseNo(user.getLicenseNo());
+		response.setAadharNo(user.getAadharNo());
+		response.setHouseNo(user.getHouseNo());
+		response.setBuildingName(user.getBuildingName());
+		response.setStreetName(user.getStreetName());
+		response.setArea(user.getArea());
+		response.setPincode(user.getPincode());
+
+		if (user.getGender() != null) {
+			response.setGender(user.getGender().name());
+		}
+
+		return response;
 	}
 
 }
