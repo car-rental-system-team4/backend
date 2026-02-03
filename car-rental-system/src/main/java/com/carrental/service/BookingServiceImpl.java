@@ -18,6 +18,7 @@ import com.carrental.enums.VehicleStatus;
 import com.carrental.repository.BookingRepository;
 import com.carrental.repository.UserRepository;
 import com.carrental.repository.VehicleRepository;
+import com.carrental.client.AuditClient;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class BookingServiceImpl implements BookingService {
 	private final BookingRepository bookingRepository;
 	private final UserRepository userRepository;
 	private final VehicleRepository vehicleRepository;
+	private final AuditClient auditClient;
 
 	@Override
 	@Transactional
@@ -96,6 +98,9 @@ public class BookingServiceImpl implements BookingService {
 		Booking savedBooking = bookingRepository.save(booking);
 		log.info("Booking created successfully: ID={}, TotalAmount={}", savedBooking.getId(), totalAmount);
 
+		// Audit Log
+		auditClient.logActivity("BOOKING_CREATED", userEmail, "Booking ID: " + savedBooking.getId());
+
 		// Convert to response
 		return convertToResponse(savedBooking);
 	}
@@ -159,14 +164,15 @@ public class BookingServiceImpl implements BookingService {
 			Vehicle vehicle = booking.getVehicle();
 			vehicle.setStatus(VehicleStatus.AVAILABLE);
 			vehicleRepository.save(vehicle);
-			log.info("Vehicle {} status reverted to AVAILABLE due to cancellation", vehicle.getId());
 		}
 
 		// Save booking
-		Booking updatedBooking = bookingRepository.save(booking);
-		log.info("Booking ID: {} cancelled successfully", bookingId);
+		bookingRepository.save(booking);
 
-		return convertToResponse(updatedBooking);
+		// Audit Log
+		auditClient.logActivity("BOOKING_CANCELLED", userEmail, "Booking ID: " + bookingId);
+
+		return convertToResponse(booking);
 	}
 
 	@Override
