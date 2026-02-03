@@ -1,0 +1,79 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: car-rental-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: car_rental_db
+      MYSQL_USER: D4_92619_Pratik
+      MYSQL_PASSWORD: Pratik@@2305
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - car-rental-net
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  audit-service:
+    build:
+      context: ./audit-service/Audit.API
+      dockerfile: Dockerfile
+    container_name: car-rental-audit
+    environment:
+      - ConnectionStrings__AuditDatabase=Data Source=/app/audit.db
+    volumes:
+      - audit_data:/app
+    ports:
+      - "5032:8080"
+    networks:
+      - car-rental-net
+
+  backend:
+    build:
+      context: ./car-rental-system
+      dockerfile: Dockerfile
+    container_name: car-rental-backend
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/car_rental_db?allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=D4_92619_Pratik
+      - SPRING_DATASOURCE_PASSWORD=Pratik@@2305
+      - AUDIT_SERVICE_URL=http://audit-service:8080/api/audits
+      # Inject AWS Keys from Host Environment or .env file
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      audit-service:
+        condition: service_started
+    networks:
+      - car-rental-net
+
+  frontend:
+    # Assuming frontend repo is cloned alongside backend on the server:
+    # /home/ubuntu/car-rental-system/backend (we are here)
+    # /home/ubuntu/car-rental-system/frontend (peer dir)
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: car-rental-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - car-rental-net
+
+networks:
+  car-rental-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  audit_data:
