@@ -15,7 +15,9 @@ public class AuditClient {
 
     private final RestTemplate restTemplate;
     // Using HTTP port from launchSettings.json
-    private final String AUDIT_SERVICE_URL = "http://localhost:5032/api/audits";
+    // Use Env Var for Docker compatibility, default to local for dev
+    @org.springframework.beans.factory.annotation.Value("${audit.service.url:http://audit-service:8080/api/audits}")
+    private String auditServiceUrl;
 
     @Async
     public void logActivity(String action, String userEmail, String details) {
@@ -26,7 +28,7 @@ public class AuditClient {
             payload.put("userEmail", userEmail);
             payload.put("details", details);
 
-            restTemplate.postForEntity(AUDIT_SERVICE_URL, payload, Void.class);
+            restTemplate.postForEntity(auditServiceUrl, payload, Void.class);
         } catch (Exception e) {
             log.error("Failed to log audit activity", e);
         }
