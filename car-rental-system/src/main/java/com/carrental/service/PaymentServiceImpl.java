@@ -17,6 +17,7 @@ import com.carrental.enums.PaymentStatus;
 import com.carrental.repository.BookingRepository;
 import com.carrental.repository.PaymentRepository;
 import com.carrental.repository.UserRepository;
+import com.carrental.client.AuditClient;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,6 +28,7 @@ public class PaymentServiceImpl implements PaymentService {
 	private final PaymentRepository paymentRepository;
 	private final BookingRepository bookingRepository;
 	private final UserRepository userRepository;
+	private final AuditClient auditClient;
 
 	@Override
 	@Transactional
@@ -55,8 +57,8 @@ public class PaymentServiceImpl implements PaymentService {
 		payment.setAmount(booking.getTotalAmount());
 		payment.setPaymentMethod(request.getPaymentMethod());
 		payment.setStatus(PaymentStatus.PENDING);
-		payment.setTransactionId(request.getTransactionId() != null ? request.getTransactionId() : 
-			"TXN" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+		payment.setTransactionId(request.getTransactionId() != null ? request.getTransactionId()
+				: "TXN" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
 
 		// Save payment
 		Payment savedPayment = paymentRepository.save(payment);
@@ -70,6 +72,10 @@ public class PaymentServiceImpl implements PaymentService {
 		// Update booking status to CONFIRMED
 		booking.setStatus(BookingStatus.CONFIRMED);
 		bookingRepository.save(booking);
+
+		// Audit Log
+		auditClient.logActivity("PAYMENT_SUCCESS", userEmail,
+				"Payment ID: " + savedPayment.getId() + ", Amount: " + savedPayment.getAmount());
 
 		// Convert to response
 		return convertToResponse(savedPayment);
@@ -109,11 +115,11 @@ public class PaymentServiceImpl implements PaymentService {
 
 		// Update status
 		payment.setStatus(newStatus);
-		
+
 		// If status is COMPLETED, set payment date
 		if (newStatus == PaymentStatus.COMPLETED && payment.getPaymentDate() == null) {
 			payment.setPaymentDate(LocalDateTime.now());
-			
+
 			// Update booking status to CONFIRMED
 			Booking booking = payment.getBooking();
 			if (booking.getStatus() == BookingStatus.PENDING) {
