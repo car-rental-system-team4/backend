@@ -24,9 +24,9 @@ services:
       dockerfile: Dockerfile
     container_name: car-rental-audit
     environment:
-      - ConnectionStrings__AuditDatabase=Data Source=/app/audit.db
+      - ConnectionStrings__AuditDatabase=Data Source=/app/data/audit.db
     volumes:
-      - audit_data:/app
+      - audit_data:/app/data
     ports:
       - "5032:8080"
     networks:
