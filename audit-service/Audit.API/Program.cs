@@ -12,7 +12,15 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AuditContext>(options =>
     options.UseSqlite("Data Source=audit.db"));
 
+
 var app = builder.Build();
+
+// Auto-create database on startup (Fix for Docker 500 Error)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AuditContext>();
+    db.Database.EnsureCreated();
+}
 
 // Configure the HTTP request pipeline.
 // Configure the HTTP request pipeline.
